@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EquationStudio</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png"><meta name="theme-color" content="#2563eb"><meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--tx:#1b1f24;--mut:#667085;--bd:#d6dbe1;--ac:#2563eb;--acx:#fff;--hl:#eaf1ff;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13161a;--card:#1c2026;--tx:#e8ebef;--mut:#9aa4b2;--bd:#323944;--ac:#5b8def;--acx:#fff;--hl:#232c3d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#13161a;--card:#1c2026;--tx:#e8ebef;--mut:#9aa4b2;--bd:#323944;--ac:#5b8def;--acx:#fff;--hl:#232c3d;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--card)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--card);border-bottom:1px solid var(--bd);padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bar h1{font-size:17px;margin:0 8px 0 0}
+button,select{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:7px 11px;cursor:pointer}
+button:hover{background:var(--hl)}
+button.pri{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:600}
+main{max-width:1100px;margin:0 auto;padding:14px;display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.tabs button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.pal{display:flex;flex-wrap:wrap;gap:5px}
+.pal button{min-width:42px;font-size:17px;padding:6px 9px}
+.ln{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.ln input{flex:1;min-width:0;font:17px ui-monospace,Consolas,monospace;padding:9px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)}
+.ln input:focus{outline:2px solid var(--ac)}
+.ln.t input{font-family:inherit;font-style:italic}
+.hint{color:var(--mut);font-size:13px}
+#sheet{background:#fff;color:#111;border:1px solid var(--bd);border-radius:8px;overflow-x:auto;min-height:90px}
+details{font-size:14px}summary{cursor:pointer;font-weight:600}
+code{background:var(--hl);padding:1px 5px;border-radius:4px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:20;max-width:90vw}
+</style></head><body>
+<div class="bar">
+<h1>∑ EquationStudio</h1>
+<button class="pri" id="bDocx" title="Download a Word file with real, editable equations">Open in Word (.docx)</button>
+<button id="bPic" title="Copy the whole page as a picture, then paste into Word or WordPress">Copy as picture</button>
+<select id="fmt" title="Text format">
+<option value="uni">Text (plain)</option><option value="tex">LaTeX $$…$$</option><option value="jp">WordPress $latex …$</option><option value="ql">WordPress [latex]…[/latex]</option>
+</select><button id="bTxt">Copy text</button>
+</div>
+<main>
+<div class="card"><input id="srch" placeholder="Search symbols and templates (e.g. integral, matrix, alpha, arrow, binomial)" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);margin-bottom:8px"><div class="tabs" id="tabs"></div><div class="pal" id="pal"></div></div>
+<div class="card"><b>Your calculation</b> <span class="hint">· Enter = new line · Ctrl+M = switch Math/Text · lines with <code>=</code> line up automatically</span>
+<div id="lines" style="margin-top:8px"></div>
+<button id="addM">+ Math line</button> <button id="addT">+ Text line</button> <button id="clr">Clear all</button></div>
+<div class="card"><b>Page preview</b> <span class="hint">· this is what goes to Word</span>
+<div id="sheet" style="margin-top:8px"></div></div>
+<div class="card"><details><summary>How to type (cheat sheet)</summary>
+<p>Fraction: <code>8/9</code> · with brackets <code>(a+b)/(c-d)</code> · stacked fractions <code>(8/9)/(1/2)</code><br>
+Power: <code>x^2</code>, <code>x^(n+1)</code> · Subscript: <code>x_1</code> · Root: <code>sqrt(x)</code>, <code>sqrt[3](x)</code><br>
+Sum: <code>sum_(i=1)^n i</code> · Integral: <code>int_0^1 x^2 dx</code> · Limit: <code>lim_(x->0) sin(x)/x</code><br>
+Matrix: <code>mat(1,2;3,4)</code> · Absolute value: <code>abs(x)</code> · Vector/bar/hat: <code>vec(v)</code> <code>bar(x)</code> <code>hat(x)</code><br>
+Symbols: <code>-></code> → · <code><=</code> ≤ · <code>>=</code> ≥ · <code>!=</code> ≠ · <code>+-</code> ± · <code>*</code> × · <code>pi</code> π · <code>alpha</code> α · <code>inf</code> ∞ · <code>deg</code> °<br>
+Plain words inside math: put them in quotes, like <code>"area" = pi r^2</code><br>
+Piecewise: <code>cases(x, x&gt;=0; -x, x&lt;0)</code> · Binomial: <code>binom(n,k)</code> · Matrices: <code>pmat(…)</code> round, <code>bmat</code> square, <code>vmat</code> determinant bars, <code>Bmat</code> curly<br>
+Double/triple integral: <code>iint_(D) f dA</code>, <code>iiint</code> · Big union/intersection: <code>bigcup_(i=1)^n</code>, <code>bigcap</code> · Floor/ceiling/norm: <code>floor(x)</code> <code>ceil(x)</code> <code>norm(v)</code><br>
+Accents: <code>overline(AB)</code> <code>underline(x)</code> <code>tilde(x)</code> <code>dot(x)</code> <code>ddot(x)</code> · Over/under: <code>over(x,y)</code> <code>under(x,y)</code> · Labelled arrow: <code>arrow(top,bottom)</code></p>
+<p class="hint">Best for Word: click “Open in Word (.docx)”. The equations in that file are real Word equations you can edit. “Copy as picture” pastes anywhere, but it is an image.</p></details></div>
+</main><div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const GREEK={alpha:'α',beta:'β',gamma:'γ',delta:'δ',epsilon:'ε',zeta:'ζ',eta:'η',theta:'θ',iota:'ι',kappa:'κ',lambda:'λ',mu:'μ',nu:'ν',xi:'ξ',rho:'ρ',sigma:'σ',tau:'τ',upsilon:'υ',phi:'φ',chi:'χ',psi:'ψ',omega:'ω',Gamma:'Γ',Delta:'Δ',Theta:'Θ',Lambda:'Λ',Pi:'Π',Sigma:'Σ',Phi:'Φ',Psi:'Ψ',Omega:'Ω',pi:'π'};
+const SYM={inf:'∞',times:'×',div:'÷',cdot:'·',leq:'≤',geq:'≥',neq:'≠',approx:'≈',deg:'°',pm:'±',partial:'∂',nabla:'∇',forall:'∀',exists:'∃',subset:'⊂',supset:'⊃',subseteq:'⊆',emptyset:'∅',infty:'∞',ldots:'…'};
+const FN=['sin','cos','tan','cot','sec','csc','arcsin','arccos','arctan','sinh','cosh','tanh','log','ln','exp','min','max','det','gcd','mod','dim','ker','arg','sgn','lcm'];
+const NARY={sum:'∑',prod:'∏',coprod:'∐',int:'∫',iint:'∬',iiint:'∭',oint:'∮',bigcup:'⋃',bigcap:'⋂'};
+const MAT={pmat:['(',')'],bmat:['[',']'],vmat:['|','|'],Vmat:['‖','‖'],Bmat:['{','}']};
+const FENCE={floor:['⌊','⌋'],ceil:['⌈','⌉'],norm:['‖','‖'],ang:['⟨','⟩']};
+const ACC={dot:'˙',ddot:'¨',tilde:'~',underline:'_',overline:'¯'};
+const ACCM={'^':'\u0302','˙':'\u0307','¨':'\u0308','~':'\u0303'};
+const ACCT={'→':'vec','¯':'bar','^':'hat','˙':'dot','¨':'ddot','~':'tilde','_':'underline'};
+const TXF={'⌊':'\\lfloor','⌋':'\\rfloor','⌈':'\\lceil','⌉':'\\rceil','‖':'\\|','⟨':'\\langle','⟩':'\\rangle'};
+const MENV={'(':'pmatrix','[':'bmatrix','|':'vmatrix','‖':'Vmatrix','{':'Bmatrix'};
+const KW=['sqrt','lim','vec','bar','hat','abs','mat','cases','binom','over','under','arrow',...Object.keys(NARY),...Object.keys(MAT),...Object.keys(FENCE),...Object.keys(ACC)];
+const WORDS=[...Object.keys(GREEK),...Object.keys(SYM),...FN,...KW];
+const OPS2=['<->','<=>','->','<-','=>','<=','>=','!=','+-','-+','...'];
+const NORM={'*':'×','-':'−','->':'→','<-':'←','<->':'↔','=>':'⇒','<=>':'⇔','<=':'≤','>=':'≥','!=':'≠','+-':'±','-+':'∓','...':'…'};
+function lex(s){const t=[];let i=0;
+ while(i<s.length){const c=s[i];
+  if(/\s/.test(c)){i++;continue}
+  let m=/^\d+(\.\d+)?/.exec(s.slice(i));
+  if(m){t.push({k:'num',v:m[0]});i+=m[0].length;continue}
+  if(c==='"'){let j=s.indexOf('"',i+1);if(j<0)j=s.length;t.push({k:'txt',v:s.slice(i+1,j)});i=j+1;continue}
+  if(/[A-Za-z]/.test(c)){m=/^[A-Za-z]+/.exec(s.slice(i))[0];let p=0;
+   while(p<m.length){const rest=m.slice(p);let best='';
+    for(const w of WORDS)if(rest.startsWith(w)&&w.length>best.length)best=w;
+    if(best){t.push(GREEK[best]?{k:'id',v:GREEK[best]}:SYM[best]?{k:'op',v:SYM[best]}:FN.includes(best)?{k:'fn',v:best}:{k:'kw',v:best});p+=best.length}
+    else{t.push({k:'id',v:rest[0]});p++}}
+   i+=m.length;continue}
+  const o=OPS2.find(x=>s.startsWith(x,i));
+  if(o){t.push({k:'op',v:o});i+=o.length;continue}
+  t.push(/\p{L}/u.test(c)?{k:'id',v:c}:{k:'op',v:c});i++}
+ return t}
+const opn=v=>({t:'o',v:NORM[v]||v});
+function parse(s){const T=lex(s);let p=0;
+ const nx=()=>T[p++];
+ const isOp=v=>T[p]&&T[p].k==='op'&&T[p].v===v;
+ const strip=n=>n.t==='fence'&&n.l==='('&&n.r===')'?n.c:n;
+ function row(stops){const c=[];while(p<T.length){const t=T[p];if(t.k==='op'&&stops.includes(t.v))break;c.push(frac())}return{t:'row',c}}
+ function frac(){let a=scr();while(isOp('/')){p++;if(p>=T.length)break;const b=scr();a={t:'frac',a:strip(a),b:strip(b)}}return a}
+ function arg(){if(isOp('-')||isOp('+')){const o=nx();return{t:'row',c:[opn(o.v),arg()]}}return strip(atom())}
+ function scr(){const b=atom();let lo=null,up=null;
+  for(;;){if(isOp('_')&&!lo){p++;lo=arg()}else if(isOp('^')&&!up){p++;up=arg()}else break}
+  if(lo&&up)return{t:'subsup',b,l:lo,u:up};if(lo)return{t:'sub',b,e:lo};if(up)return{t:'sup',b,e:up};return b}
+ function atom(){const t=nx();if(!t)return{t:'row',c:[]};
+  if(t.k==='num')return{t:'n',v:t.v};if(t.k==='id')return{t:'i',v:t.v};if(t.k==='fn')return{t:'fn',v:t.v};if(t.k==='txt')return{t:'txt',v:t.v};
+  if(t.k==='kw')return kw(t.v);
+  if(t.v.length===1&&'([{'.includes(t.v)){const r=row([')',']','}']);let cl='';if(T[p]&&T[p].k==='op'&&')]}'.includes(T[p].v)&&T[p].v.length===1)cl=nx().v;return{t:'fence',l:t.v,r:cl,c:r}}
+  return opn(t.v)}
+ function kw(v){
+  if(v==='sqrt'){let n=null;if(isOp('[')){p++;n=row([']']);if(isOp(']'))p++}if(p>=T.length)return{t:'i',v};return{t:'sqrt',n,x:strip(atom())}}
+  if(NARY[v]){let lo=null,up=null;
+   for(;;){if(isOp('_')&&!lo){p++;lo=arg()}else if(isOp('^')&&!up){p++;up=arg()}else break}
+   let body=null;if(p<T.length&&!(T[p].k==='op'&&[')',']','}','=',',',';'].includes(T[p].v)))body=frac();
+   return{t:'nary',ch:NARY[v],lo,up,body}}
+  if(MAT[v]||v==='cases'){if(!isOp('('))return{t:'i',v};p++;const rows=[];let cur=[];
+   for(;;){cur.push(row([',',';',')']));if(isOp(',')){p++;continue}if(isOp(';')){p++;rows.push(cur);cur=[];continue}break}
+   rows.push(cur);if(isOp(')'))p++;return v==='cases'?{t:'cases',rows}:{t:'mat',rows,l:MAT[v][0],r:MAT[v][1]}}
+  if(FENCE[v]){if(!isOp('('))return{t:'i',v};const a=atom();return{t:'fence',l:FENCE[v][0],r:FENCE[v][1],c:a.c}}
+  if(v==='binom'||v==='over'||v==='under'||v==='arrow'){if(!isOp('('))return{t:'i',v};p++;const a=row([',',';',')']);let b={t:'row',c:[]};
+   if(isOp(',')||isOp(';')){p++;b=row([')'])}if(isOp(')'))p++;
+   return v==='binom'?{t:'binom',a,b}:v==='arrow'?{t:'larr',top:a,bot:b}:{t:'ou',x:a,y:b,over:v==='over'}}
+  if(ACC[v]){if(!isOp('('))return{t:'i',v};const a=atom();return{t:'acc',ch:ACC[v],x:a.c}}
+  if(v==='lim'){let lo=null;if(isOp('_')){p++;lo=arg()}return{t:'lim',lo}}
+  if(['vec','bar','hat','abs'].includes(v)){if(!isOp('('))return{t:'i',v};const a=atom();
+   return v==='abs'?{t:'fence',l:'|',r:'|',c:a.c}:{t:'acc',ch:{vec:'→',bar:'¯',hat:'^'}[v],x:a.c}}
+  if(v==='mat'){if(!isOp('('))return{t:'i',v};p++;const rows=[];let cur=[];
+   for(;;){cur.push(row([',',';',')']));if(isOp(',')){p++;continue}if(isOp(';')){p++;rows.push(cur);cur=[];continue}break}
+   rows.push(cur);if(isOp(')'))p++;return{t:'mat',rows}}
+  return{t:'i',v}}
+ return row([])}
+const X=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+/* MathML preview */
+function sc(b,lo,up,kind){const B=b;
+ if(kind==='lim'){return lo&&up?`<munderover>${B}${lo}${up}</munderover>`:lo?`<munder>${B}${lo}</munder>`:up?`<mover>${B}${up}</mover>`:B}
+ return lo&&up?`<msubsup>${B}${lo}${up}</msubsup>`:lo?`<msub>${B}${lo}</msub>`:up?`<msup>${B}${up}</msup>`:B}
+function mm(n){if(!n)return'<mrow></mrow>';switch(n.t){
+ case'n':return`<mn>${X(n.v)}</mn>`;case'i':return`<mi>${X(n.v)}</mi>`;case'fn':return`<mi mathvariant="normal">${n.v}</mi>`;
+ case'o':return`<mo>${X(n.v)}</mo>`;case'txt':return`<mtext>${X(n.v)}</mtext>`;
+ case'row':return`<mrow>${n.c.map(mm).join('')}</mrow>`;
+ case'frac':return`<mfrac>${mm(n.a)}${mm(n.b)}</mfrac>`;
+ case'sup':return`<msup>${mm(n.b)}${mm(n.e)}</msup>`;case'sub':return`<msub>${mm(n.b)}${mm(n.e)}</msub>`;
+ case'subsup':return`<msubsup>${mm(n.b)}${mm(n.l)}${mm(n.u)}</msubsup>`;
+ case'sqrt':return n.n?`<mroot>${mm(n.x)}${mm(n.n)}</mroot>`:`<msqrt>${mm(n.x)}</msqrt>`;
+ case'fence':return`<mrow>${n.l?`<mo>${X(n.l)}</mo>`:''}${mm(n.c)}${n.r?`<mo>${X(n.r)}</mo>`:''}</mrow>`;
+ case'nary':{const big=/[∑∏∐⋃⋂]/.test(n.ch);const op=`<mo largeop="true" stretchy="false">${n.ch}</mo>`;
+  return`<mrow>${sc(op,n.lo&&mm(n.lo),n.up&&mm(n.up),big?'lim':'sub')}${n.body?mm(n.body):''}</mrow>`}
+ case'cases':return`<mrow><mo>{</mo><mtable columnalign="left left" columnspacing="1.5em">${n.rows.map(r=>`<mtr>${r.map(c=>`<mtd>${mm(c)}</mtd>`).join('')}</mtr>`).join('')}</mtable></mrow>`;
+ case'binom':return`<mrow><mo>(</mo><mfrac linethickness="0">${mm(n.a)}${mm(n.b)}</mfrac><mo>)</mo></mrow>`;
+ case'ou':return n.over?`<mover>${mm(n.x)}${mm(n.y)}</mover>`:`<munder>${mm(n.x)}${mm(n.y)}</munder>`;
+ case'larr':return`<munderover><mo>→</mo>${mm(n.bot)}${mm(n.top)}</munderover>`;
+ case'lim':return n.lo?`<munder><mi mathvariant="normal">lim</mi>${mm(n.lo)}</munder>`:'<mi mathvariant="normal">lim</mi>';
+ case'acc':if(n.ch==='_')return`<munder>${mm(n.x)}<mo>_</mo></munder>`;return`<mover accent="true">${mm(n.x)}<mo>${n.ch}</mo></mover>`;
+ case'mat':return`<mrow><mo>${X(n.l||'(')}</mo><mtable>${n.rows.map(r=>`<mtr>${r.map(c=>`<mtd>${mm(c)}</mtd>`).join('')}</mtr>`).join('')}</mtable><mo>${X(n.r||')')}</mo></mrow>`}
+ return''}
+/* OMML for Word */
+const E=x=>x||'<m:r><m:t></m:t></m:r>';
+const R=t=>`<m:r><m:t xml:space="preserve">${X(t)}</m:t></m:r>`;
+const RP=t=>`<m:r><m:rPr><m:sty m:val="p"/></m:rPr><m:t xml:space="preserve">${X(t)}</m:t></m:r>`;
+function om(n){if(!n)return'';switch(n.t){
+ case'n':case'i':case'o':return R(n.v);case'fn':return RP(n.v);
+ case'txt':return`<m:r><m:rPr><m:nor/></m:rPr><m:t xml:space="preserve">${X(n.v)}</m:t></m:r>`;
+ case'row':return n.c.map(om).join('');
+ case'frac':return`<m:f><m:num>${E(om(n.a))}</m:num><m:den>${E(om(n.b))}</m:den></m:f>`;
+ case'sup':return`<m:sSup><m:e>${E(om(n.b))}</m:e><m:sup>${E(om(n.e))}</m:sup></m:sSup>`;
+ case'sub':return`<m:sSub><m:e>${E(om(n.b))}</m:e><m:sub>${E(om(n.e))}</m:sub></m:sSub>`;
+ case'subsup':return`<m:sSubSup><m:e>${E(om(n.b))}</m:e><m:sub>${E(om(n.l))}</m:sub><m:sup>${E(om(n.u))}</m:sup></m:sSubSup>`;
+ case'sqrt':return n.n?`<m:rad><m:deg>${E(om(n.n))}</m:deg><m:e>${E(om(n.x))}</m:e></m:rad>`:`<m:rad><m:radPr><m:degHide m:val="1"/></m:radPr><m:deg/><m:e>${E(om(n.x))}</m:e></m:rad>`;
+ case'fence':return`<m:d><m:dPr><m:begChr m:val="${X(n.l)}"/><m:endChr m:val="${X(n.r)}"/></m:dPr><m:e>${E(om(n.c))}</m:e></m:d>`;
+ case'nary':return`<m:nary><m:naryPr><m:chr m:val="${n.ch}"/><m:limLoc m:val="${/[∑∏∐⋃⋂]/.test(n.ch)?'undOvr':'subSup'}"/>${n.lo?'':'<m:subHide m:val="1"/>'}${n.up?'':'<m:supHide m:val="1"/>'}</m:naryPr><m:sub>${E(om(n.lo))}</m:sub><m:sup>${E(om(n.up))}</m:sup><m:e>${E(om(n.body))}</m:e></m:nary>`;
+ case'cases':return`<m:d><m:dPr><m:begChr m:val="{"/><m:endChr m:val=""/></m:dPr><m:e><m:eqArr><m:eqArrPr><m:maxDist m:val="1"/></m:eqArrPr>${n.rows.map(r=>`<m:e><m:r><m:rPr><m:aln/></m:rPr><m:t></m:t></m:r>${r.map(om).join(R('\u2003'))}</m:e>`).join('')}</m:eqArr></m:e></m:d>`;
+ case'binom':return`<m:d><m:dPr><m:begChr m:val="("/><m:endChr m:val=")"/></m:dPr><m:e><m:f><m:fPr><m:type m:val="noBar"/></m:fPr><m:num>${E(om(n.a))}</m:num><m:den>${E(om(n.b))}</m:den></m:f></m:e></m:d>`;
+ case'ou':return n.over?`<m:limUpp><m:e>${E(om(n.x))}</m:e><m:lim>${E(om(n.y))}</m:lim></m:limUpp>`:`<m:limLow><m:e>${E(om(n.x))}</m:e><m:lim>${E(om(n.y))}</m:lim></m:limLow>`;
+ case'larr':{const up=`<m:limUpp><m:e>${R('→')}</m:e><m:lim>${E(om(n.top))}</m:lim></m:limUpp>`;return n.bot.c.length?`<m:limLow><m:e>${up}</m:e><m:lim>${E(om(n.bot))}</m:lim></m:limLow>`:up}
+ case'lim':return n.lo?`<m:limLow><m:e>${RP('lim')}</m:e><m:lim>${E(om(n.lo))}</m:lim></m:limLow>`:RP('lim');
+ case'acc':if(n.ch==='_')return`<m:bar><m:barPr><m:pos m:val="bot"/></m:barPr><m:e>${E(om(n.x))}</m:e></m:bar>`;return n.ch==='¯'?`<m:bar><m:barPr><m:pos m:val="top"/></m:barPr><m:e>${E(om(n.x))}</m:e></m:bar>`:`<m:acc><m:accPr><m:chr m:val="${ACCM[n.ch]||n.ch}"/></m:accPr><m:e>${E(om(n.x))}</m:e></m:acc>`;
+ case'mat':return`<m:d><m:dPr><m:begChr m:val="${X(n.l||'(')}"/><m:endChr m:val="${X(n.r||')')}"/></m:dPr><m:e><m:m>${n.rows.map(r=>`<m:mr>${r.map(c=>`<m:e>${E(om(c))}</m:e>`).join('')}</m:mr>`).join('')}</m:m></m:e></m:d>`}
+ return''}
+function omLine(r){let d=false;return r.c.map(x=>{if(!d&&x.t==='o'&&x.v==='='){d=true;return'<m:r><m:rPr><m:aln/></m:rPr><m:t>=</m:t></m:r>'}return om(x)}).join('')}
+/* LaTeX + plain text */
+const TX={'×':'\\times','÷':'\\div','±':'\\pm','∓':'\\mp','≤':'\\leq','≥':'\\geq','≠':'\\neq','≈':'\\approx','→':'\\to','←':'\\leftarrow','↔':'\\leftrightarrow','⇒':'\\Rightarrow','⇔':'\\Leftrightarrow','∞':'\\infty','°':'^\\circ','·':'\\cdot','−':'-','…':'\\ldots','∈':'\\in','∉':'\\notin','⊂':'\\subset','⊆':'\\subseteq','∪':'\\cup','∩':'\\cap','∅':'\\emptyset','∀':'\\forall','∃':'\\exists','∂':'\\partial','∇':'\\nabla','∝':'\\propto','∴':'\\therefore','%':'\\%'};
+for(const k in GREEK)TX[GREEK[k]]='\\'+k;
+const tx=n=>{if(!n)return'';switch(n.t){
+ case'n':return n.v;case'i':case'o':return TX[n.v]||n.v;case'fn':return n.v==='mod'?'\\bmod':'\\'+n.v;case'txt':return`\\text{${n.v}}`;
+ case'row':return n.c.map(tx).join(' ');case'frac':return`\\frac{${tx(n.a)}}{${tx(n.b)}}`;
+ case'sup':return`{${tx(n.b)}}^{${tx(n.e)}}`;case'sub':return`{${tx(n.b)}}_{${tx(n.e)}}`;case'subsup':return`{${tx(n.b)}}_{${tx(n.l)}}^{${tx(n.u)}}`;
+ case'sqrt':return`\\sqrt${n.n?`[${tx(n.n)}]`:''}{${tx(n.x)}}`;
+ case'fence':{const f=c=>TXF[c]||(c==='{'||c==='}'?'\\'+c:c);return`\\left${f(n.l)||'.'} ${tx(n.c)} \\right${f(n.r)||'.'}`}
+ case'nary':return`${{'∑':'\\sum','∏':'\\prod','∫':'\\int','∮':'\\oint','∐':'\\coprod','∬':'\\iint','∭':'\\iiint','⋃':'\\bigcup','⋂':'\\bigcap'}[n.ch]}${n.lo?`_{${tx(n.lo)}}`:''}${n.up?`^{${tx(n.up)}}`:''} ${tx(n.body)}`;
+ case'lim':return`\\lim${n.lo?`_{${tx(n.lo)}}`:''}`;case'acc':return`\\${ACCT[n.ch]}{${tx(n.x)}}`;
+ case'cases':return`\\begin{cases} ${n.rows.map(r=>r.map(tx).join(' & ')).join(' \\\\ ')} \\end{cases}`;
+ case'binom':return`\\binom{${tx(n.a)}}{${tx(n.b)}}`;
+ case'ou':return`\\${n.over?'overset':'underset'}{${tx(n.y)}}{${tx(n.x)}}`;
+ case'larr':return`\\xrightarrow${n.bot.c.length?`[${tx(n.bot)}]`:''}{${tx(n.top)}}`;
+ case'mat':return`\\begin{${MENV[n.l]||'pmatrix'}} ${n.rows.map(r=>r.map(tx).join(' & ')).join(' \\\\ ')} \\end{${MENV[n.l]||'pmatrix'}}`}return''};
+const SUP='⁰¹²³⁴⁵⁶⁷⁸⁹';
+const wrap=n=>{const s=ln(n);return /[\s\/+−×÷=^_]/.test(s)?`(${s})`:s};
+const ln=n=>{if(!n)return'';switch(n.t){
+ case'n':case'i':case'o':case'fn':return n.v;case'txt':return n.v;case'row':return n.c.map(ln).join(' ').replace(/ ([,;)°%!]) ?/g,'$1 ');
+ case'frac':return`${wrap(n.a)}/${wrap(n.b)}`;
+ case'sup':{const e=ln(n.e);return ln(n.b)+(/^\d$/.test(e)?SUP[e]:'^'+(e.length>1?`(${e})`:e))}
+ case'sub':{const e=ln(n.e);return ln(n.b)+'_'+(e.length>1?`(${e})`:e)}
+ case'subsup':return`${ln(n.b)}_(${ln(n.l)})^(${ln(n.u)})`;
+ case'sqrt':return`${n.n?ln(n.n):''}√(${ln(n.x)})`;
+ case'fence':return`${n.l}${ln(n.c)}${n.r}`;
+ case'nary':return`${n.ch}${n.lo?`_(${ln(n.lo)})`:''}${n.up?`^(${ln(n.up)})`:''} ${ln(n.body)}`;
+ case'lim':return'lim'+(n.lo?`_(${ln(n.lo)})`:'');case'acc':return`${ACCT[n.ch]}(${ln(n.x)})`;
+ case'cases':return'{ '+n.rows.map(r=>r.map(ln).join(', ')).join('; ')+' }';
+ case'binom':return`C(${ln(n.a)}, ${ln(n.b)})`;case'ou':return`${ln(n.x)}[${ln(n.y)}]`;case'larr':return`→[${ln(n.top)}|${ln(n.bot)}]`;
+ case'mat':return'['+n.rows.map(r=>r.map(ln).join(', ')).join('; ')+']'}return''};
+/* worksheet state */
+const DEF=[{k:'t',s:'Divide the fractions:'},{k:'m',s:'8/9 ÷ 1/2'},{k:'m',s:'= 8/9 × 2/1'},{k:'m',s:'= 16/9'}];
+let L=DEF.map(x=>({...x})),cur=0,toastT;
+try{const s=JSON.parse(localStorage.getItem('es.lines')||'null');if(Array.isArray(s)&&s.length)L=s}catch(e){}
+const save=()=>{try{localStorage.setItem('es.lines',JSON.stringify(L))}catch(e){}};
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',3500)}
+function groups(){const g=[];for(const l of L){if(l.k==='t')g.push({t:'t',s:l.s});else if(l.s.trim()){const last=g[g.length-1];const r=parse(l.s);if(last&&last.t==='m')last.rows.push(r);else g.push({t:'m',rows:[r]})}}return g}
+const split=r=>{const i=r.c.findIndex(x=>x.t==='o'&&x.v==='=');return i<0?{l:r.c,r:[]}:{l:r.c.slice(0,i),r:r.c.slice(i)}};
+const SHEET='background:#fff;color:#111;font-size:24px;padding:18px 26px;font-family:"Cambria Math","STIX Two Math","Latin Modern Math",Cambria,serif';
+function sheetHTML(){return groups().map(g=>{
+ if(g.t==='t')return`<p style="margin:10px 0;font-family:Calibri,Arial,sans-serif;font-size:19px">${g.s.trim()?X(g.s):'&#160;'}</p>`;
+ const al=g.rows.some(r=>r.c.some(x=>x.t==='o'&&x.v==='='));
+ const rows=g.rows.map(r=>{if(!al)return`<mtr><mtd>${mm(r)}</mtd></mtr>`;const s=split(r);return`<mtr><mtd>${mm({t:'row',c:s.l})}</mtd><mtd>${mm({t:'row',c:s.r})}</mtd></mtr>`}).join('');
+ return`<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" style="text-align:left"><mtable ${al?'columnalign="right left"':'columnalign="left"'} columnspacing="0.2em" rowspacing="0.7em">${rows}</mtable></math>`}).join('')}
+function prev(){const s=$('#sheet');s.setAttribute('style',SHEET);s.innerHTML=sheetHTML()}
+function build(){const box=$('#lines');box.innerHTML='';
+ L.forEach((l,i)=>{const d=document.createElement('div');d.className='ln '+l.k;
+  const b=document.createElement('button');b.textContent=l.k==='m'?'∑':'T';b.title='Switch between Math line and Text line (Ctrl+M)';
+  b.onclick=()=>{l.k=l.k==='m'?'t':'m';save();build();prev();box.children[i].querySelector('input').focus()};
+  const inp=document.createElement('input');inp.value=l.s;inp.spellcheck=false;inp.placeholder=l.k==='m'?'Type math, e.g. 8/9 ÷ 1/2':'Type a normal sentence';
+  inp.oninput=()=>{l.s=inp.value;save();prev()};inp.onfocus=()=>cur=i;
+  inp.onkeydown=e=>{
+   if(e.key==='Enter'){e.preventDefault();L.splice(i+1,0,{k:'m',s:''});save();build();prev();$('#lines').children[i+1].querySelector('input').focus()}
+   else if(e.key==='Backspace'&&!inp.value&&L.length>1){e.preventDefault();L.splice(i,1);save();build();prev();const j=Math.max(0,i-1);$('#lines').children[j].querySelector('input').focus()}
+   else if(e.key==='ArrowUp'&&i>0)$('#lines').children[i-1].querySelector('input').focus();
+   else if(e.key==='ArrowDown'&&i<L.length-1)$('#lines').children[i+1].querySelector('input').focus();
+   else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='m'){e.preventDefault();b.click()}};
+  const x=document.createElement('button');x.textContent='✕';x.title='Delete line';x.onclick=()=>{if(L.length>1)L.splice(i,1);else L[0].s='';save();build();prev()};
+  d.append(b,inp,x);box.append(d)})}
+function ins(sn){const l=L[cur]||L[0];const inp=$('#lines').children[cur].querySelector('input');
+ const a=inp.selectionStart??inp.value.length,z=inp.selectionEnd??a;let pos=sn.indexOf('¦');const t=sn.replace('¦','');
+ inp.value=inp.value.slice(0,a)+t+inp.value.slice(z);l.s=inp.value;const c=a+(pos<0?t.length:pos);inp.focus();inp.setSelectionRange(c,c);save();prev()}
+const PAL={
+ 'Basics':[['a⁄b','(¦)/()','Fraction'],['(a/b)/(c/d)','((¦)/())/(())','Fraction of fractions'],['xⁿ','^(¦)','Power'],['xₙ','_(¦)','Subscript'],['√','sqrt(¦)','Square root'],['ⁿ√','sqrt[¦]()','nth root'],['( )','(¦)','Brackets'],['[ ]','[¦]','Square brackets'],['|x|','abs(¦)','Absolute value'],['∑','sum_(i=1)^(n) ¦','Sum'],['∏','prod_(i=1)^(n) ¦','Product'],['∫','int_(a)^(b) ¦ dx','Integral'],['lim','lim_(x->¦) ','Limit'],['▦','mat(¦1,0;0,1)','Matrix'],['v⃗','vec(¦)','Vector'],['x̄','bar(¦)','Bar'],['x̂','hat(¦)','Hat'],['sin','sin(¦)','Sine'],['cos','cos(¦)','Cosine'],['log','log(¦)','Logarithm'],['ln','ln(¦)','Natural log']],
+ 'Operators':[...'+−×÷±∓·=≠≈≤≥<>∝°%∞∂∇!′″'].map(c=>[c,c,c]),
+ 'Greek':[...'αβγδεζηθικλμνξπρστυφχψωΓΔΘΛΞΠΣΦΨΩ'].map(c=>[c,c,c]),
+ 'Arrows':[...'→←↔⇒⇐⇔↑↓↦⟶⟵↗↘'].map(c=>[c,c,c]),
+ 'Sets & logic':[...'∈∉⊂⊃⊆⊇∪∩∅∀∃¬∧∨∴∵ℝℕℤℚℂ'].map(c=>[c,c,c]),
+ 'Other':[...'∠⊥∥△□○…⋯⋮ℓħ‰‱√∛∜∫∬∭∮'].map(c=>[c,c,c])};
+function pal(name){$('#tabs').innerHTML='';for(const k in PAL){const b=document.createElement('button');b.textContent=k;if(k===name)b.className='on';b.onclick=()=>pal(k);$('#tabs').append(b)}
+ const p=$('#pal');p.innerHTML='';PAL[name].forEach(([lab,sn,ti])=>{const b=document.createElement('button');b.textContent=lab;b.title=ti;b.onmousedown=e=>e.preventDefault();b.onclick=()=>ins(sn);p.append(b)})}
+/* export */
+const dlp=(typeof claude!=='undefined'&&claude.use)?Promise.resolve(claude.use('downloads')).catch(()=>null):Promise.resolve(null);
+async function save_(name,data){const d=await dlp;
+ if(d){try{await d.save({filename:name,data});toast('Saved ✓')}catch(e){if(e&&e.code!=='declined')toast('Could not save: '+(e.message||e.code))}return}
+ const b=data instanceof Blob?data:new Blob([data]);const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Saved to your Downloads folder ✓')}
+function docx(){const g=groups();let b='';
+ for(const x of g){if(x.t==='t'){b+=`<w:p><w:r><w:t xml:space="preserve">${X(x.s)}</w:t></w:r></w:p>`;continue}
+  const inner=x.rows.length===1?omLine(x.rows[0]):`<m:eqArr><m:eqArrPr><m:maxDist m:val="1"/></m:eqArrPr>${x.rows.map(r=>`<m:e>${E(omLine(r))}</m:e>`).join('')}</m:eqArr>`;
+  b+=`<w:p><m:oMathPara><m:oMathParaPr><m:jc m:val="left"/></m:oMathParaPr><m:oMath>${inner}</m:oMath></m:oMathPara></w:p>`}
+ return`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><w:body>${b}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`}
+const CRC=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(u){let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+function zip(files,mime){const enc=new TextEncoder(),parts=[],cd=[];let off=0;
+ for(const f of files){const nm=enc.encode(f.name),d=enc.encode(f.text),crc=crc32(d);
+  const l=new DataView(new ArrayBuffer(30));l.setUint32(0,0x04034b50,true);l.setUint16(4,20,true);l.setUint16(6,0x0800,true);l.setUint16(12,0x21,true);l.setUint32(14,crc,true);l.setUint32(18,d.length,true);l.setUint32(22,d.length,true);l.setUint16(26,nm.length,true);
+  parts.push(new Uint8Array(l.buffer),nm,d);
+  const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(14,0x21,true);c.setUint32(16,crc,true);c.setUint32(20,d.length,true);c.setUint32(24,d.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+  cd.push(new Uint8Array(c.buffer),nm);off+=30+nm.length+d.length}
+ const cl=cd.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));
+ e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cl,true);e.setUint32(16,off,true);
+ return new Blob([...parts,...cd,new Uint8Array(e.buffer)],{type:mime})}
+$('#bDocx').onclick=()=>{
+ const blob=zip([
+  {name:'[Content_Types].xml',text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},
+  {name:'_rels/.rels',text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},
+  {name:'word/document.xml',text:docx()}],'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+ save_('equations.docx',blob)};
+function png(){return new Promise((res,rej)=>{const el=$('#sheet');const w=Math.ceil(el.scrollWidth),h=Math.ceil(el.scrollHeight);
+ const xml=new XMLSerializer().serializeToString(el.cloneNode(true));
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="${SHEET};width:${w}px;box-sizing:border-box">${xml}</div></foreignObject></svg>`;
+ const img=new Image();img.onload=()=>{try{const c=document.createElement('canvas');c.width=w*3;c.height=h*3;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.scale(3,3);x.drawImage(img,0,0);c.toBlob(b=>b?res(b):rej(new Error('empty')),'image/png')}catch(e){rej(e)}};
+ img.onerror=()=>rej(new Error('render'));img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)})}
+$('#bPic').onclick=async()=>{let b;try{b=await png()}catch(e){toast('Could not make the picture in this browser. Use “Open in Word (.docx)” instead.');return}
+ try{await navigator.clipboard.write([new ClipboardItem({'image/png':b})]);toast('Copied as picture. Paste with Ctrl+V.')}
+ catch(e){toast('Clipboard blocked here, so I will offer the picture as a file.');save_('equations.png',b)}};
+function textOut(){const f=$('#fmt').value;const g=groups();
+ if(f==='uni')return L.map(l=>l.k==='t'?l.s:l.s.trim()?ln(parse(l.s)):'').join('\n');
+ const tex=g.map(x=>{if(x.t==='t')return null;
+  if(x.rows.length===1)return tx(x.rows[0]);
+  return`\\begin{aligned}\n${x.rows.map(r=>{const s=split(r);return s.r.length?`${tx({t:'row',c:s.l})} &${tx({t:'row',c:s.r})}`:tx(r)}).join(' \\\\\n')}\n\\end{aligned}`}).filter(Boolean);
+ return tex.map(t=>f==='tex'?`$$ ${t} $$`:f==='jp'?`$latex ${t.replace(/\n/g,' ')}$`:`[latex]${t}[/latex]`).join('\n\n')}
+$('#bTxt').onclick=async()=>{const t=textOut();try{await navigator.clipboard.writeText(t);toast('Text copied ✓')}catch(e){const a=document.createElement('textarea');a.value=t;document.body.append(a);a.select();try{document.execCommand('copy');toast('Text copied ✓')}catch(_){toast('Copy was blocked by the browser.')}a.remove()}};
+$('#addM').onclick=()=>{L.push({k:'m',s:''});cur=L.length-1;save();build();prev();$('#lines').lastChild.querySelector('input').focus()};
+$('#addT').onclick=()=>{L.push({k:'t',s:''});cur=L.length-1;save();build();prev();$('#lines').lastChild.querySelector('input').focus()};
+$('#clr').onclick=()=>{if(confirm('Clear all lines?')){L=[{k:'m',s:''}];cur=0;save();build();prev()}};
+
+const NM={'→':'right arrow','←':'left arrow','↔':'both arrows','⇒':'implies double arrow','⇔':'if and only if','∞':'infinity','≤':'less than or equal','≥':'greater than or equal','≠':'not equal','≈':'approximately','±':'plus minus','∓':'minus plus','×':'times multiply cross','÷':'divide','·':'dot product','∈':'element of in','∉':'not element','⊂':'subset','⊃':'superset','⊆':'subset or equal','∪':'union','∩':'intersection','∅':'empty set','∀':'for all','∃':'there exists','¬':'not','∧':'and','∨':'or','∴':'therefore','∵':'because','∂':'partial derivative','∇':'nabla gradient','∝':'proportional','°':'degree','∠':'angle','⊥':'perpendicular','∥':'parallel','△':'triangle','ℝ':'real numbers','ℕ':'natural numbers','ℤ':'integers','ℚ':'rational numbers','ℂ':'complex numbers','≡':'identical congruent','≅':'congruent','∼':'similar tilde','√':'square root','∖':'set minus','⊕':'direct sum xor','⊗':'tensor product','∘':'composition','⇌':'equilibrium','ℏ':'h bar planck','Å':'angstrom'};
+const REV=Object.fromEntries(Object.entries(GREEK).map(([k,v])=>[v,k]));
+const sy=s=>[...s].map(c=>[c,c,REV[c]||NM[c]||'Symbol '+c]);
+const fx=(l,s,t)=>[l,s,t||l,true];
+for(const k in PAL)delete PAL[k];
+Object.assign(PAL,{
+'Basics':[['a⁄b','(¦)/()','Fraction'],['a⁄b÷c⁄d','((¦)/())/(())','Fraction over fraction'],['x²','^(2)','Squared'],['xⁿ','^(¦)','Power exponent'],['xₙ','_(¦)','Subscript'],['xₙᵐ','_(¦)^()','Subscript and superscript'],['eˣ','e^(¦)','Exponential'],['10ⁿ','10^(¦)','Ten to the power'],['√','sqrt(¦)','Square root'],['ⁿ√','sqrt[¦]()','nth root cube root'],['( )','(¦)','Brackets'],['[ ]','[¦]','Square brackets'],['{ }','{¦}','Curly braces'],['|x|','abs(¦)','Absolute value'],['⌊x⌋','floor(¦)','Floor'],['⌈x⌉','ceil(¦)','Ceiling'],['‖x‖','norm(¦)','Norm'],['⟨x⟩','ang(¦)','Angle brackets'],['n!','¦!','Factorial'],['%','%','Percent'],['(n k)','binom(¦,)','Binomial coefficient choose']],
+'Calculus':[['d/dx','(d¦)/(dx)','Derivative'],['d²/dx²','(d^2 ¦)/(dx^2)','Second derivative'],['∂/∂x','(∂¦)/(∂x)','Partial derivative'],['f′','f′(¦)','Prime derivative'],['∫','int ¦ dx','Indefinite integral'],['∫ₐᵇ','int_(a)^(b) ¦ dx','Definite integral'],['∬','iint_(D) ¦ dA','Double integral'],['∭','iiint_(V) ¦ dV','Triple integral'],['∮','oint_(C) ¦ ds','Contour integral'],['[ ]ₐᵇ','[¦]_(a)^(b)','Evaluate between limits'],['lim','lim_(x->¦) ','Limit'],['lim ∞','lim_(x->∞) ¦','Limit at infinity'],['∑','sum_(i=1)^(n) ¦','Sum summation'],['∑ ∞','sum_(n=0)^(∞) ¦','Infinite series'],['∏','prod_(i=1)^(n) ¦','Product'],['∇','∇¦','Gradient nabla'],['Δx','Δx','Delta x change'],['dx','dx','dx differential'],['∂','∂','Partial'],['∞','∞','Infinity']],
+'Algebra':[['ax²+bx+c','a x^2 + b x + c = 0','Quadratic equation'],['logₐ','log_(¦)()','Logarithm with base'],['x = −b±√','x = (-b ± sqrt(b^2 - 4 a c))/(2 a)','Quadratic formula'],['piecewise','cases(¦x, x >= 0; -x, x < 0)','Piecewise cases'],['system','cases(¦a x + b y = c; d x + e y = f)','System of equations'],['a:b','¦ : ','Ratio'],['×10ⁿ','¦ × 10^(n)','Scientific notation'],['⌊ ⌋','floor(¦)','Floor'],['(a+b)ⁿ','(a+b)^(n)','Binomial power'],['aᵇ꜀','a^(b^(c))','Tower of powers'],['≈','≈','Approximately']],
+'Matrices':[['2×2','pmat(¦a,b;c,d)','Matrix 2 by 2 round'],['3×3','pmat(¦a,b,c;d,e,f;g,h,i)','Matrix 3 by 3'],['[2×2]','bmat(¦a,b;c,d)','Matrix square brackets'],['|2×2|','vmat(¦a,b;c,d)','Determinant 2 by 2'],['|3×3|','vmat(¦a,b,c;d,e,f;g,h,i)','Determinant 3 by 3'],['{ }','Bmat(¦a,b;c,d)','Matrix curly braces'],['‖ ‖','Vmat(¦a,b;c,d)','Matrix double bars'],['column','pmat(¦a;b;c)','Column vector'],['row','pmat(¦a,b,c)','Row vector'],['I₂','pmat(1,0;0,1)','Identity matrix 2x2'],['I₃','pmat(1,0,0;0,1,0;0,0,1)','Identity matrix 3x3'],['Aᵀ','¦A^(T)','Transpose'],['A⁻¹','A^(-1)','Inverse'],['det','det(¦)','Determinant'],['⋯','⋯','Horizontal dots'],['⋮','⋮','Vertical dots'],['⋱','⋱','Diagonal dots']],
+'Trig & functions':[...'sin cos tan cot sec csc arcsin arccos arctan sinh cosh tanh log ln exp max min gcd lcm dim ker arg sgn mod'.split(' ')].map(n=>[n,n+'(¦)',n+' function']).concat([['sin²','sin^2(¦)','Sine squared'],['cos²','cos^2(¦)','Cosine squared'],['θ','θ','theta'],['°','°','Degree']]),
+'Statistics':[['x̄','bar(¦x)','Mean x bar'],['μ','μ','mu mean'],['σ','σ','sigma standard deviation'],['σ²','σ^2','Variance'],['P(A)','P(¦)','Probability'],['P(A|B)','P(¦A|B)','Conditional probability'],['E[X]','E[¦X]','Expected value'],['Var','"Var"(¦X)','Variance'],['z','(x-μ)/(σ)','Z score'],['nCr','binom(n,¦r)','Combination'],['nPr','(n!)/((n-r)!)','Permutation'],['x̂','hat(¦x)','Estimate x hat'],['s','sqrt((sum_(i=1)^(n) (x_i - bar(x))^2)/(n-1))','Sample standard deviation'],['ρ','ρ','rho correlation'],['χ²','χ^2','chi squared']],
+'Operators':sy('+−×÷±∓·∗∘⊕⊗⊙∣∤%‰!′″°∂∇√∛∜'),
+'Relations':sy('=≠≈≡≅∼≃≤≥≪≫<>∝≺≻⊥∥∣'),
+'Greek':sy('αβγδεϵζηθϑικλμνξοπρϱσςτυφϕχψωΓΔΘΛΞΠΣΥΦΨΩ'),
+'Arrows':sy('→←↔⇒⇐⇔↑↓↕↦⟶⟵⟷⟹⟸⟺↗↘↙↖⇌⇄↩↪⇀↼').concat([['→ over','arrow(¦,)','Arrow with text above'],['→ under','arrow(,¦)','Arrow with text below']]),
+'Sets & logic':sy('∈∉∋∌⊂⊃⊄⊆⊇⊊∪∩∖△∅∀∃∄¬∧∨⊻⊤⊢⊨∴∵ℝℕℤℚℂℙℍ∁').concat([['⋃','bigcup_(i=1)^(n) ¦','Big union'],['⋂','bigcap_(i=1)^(n) ¦','Big intersection'],['{x|…}','{¦x | x ∈ ℝ}','Set builder'],['ℝⁿ','ℝ^(n)','R n space'],['Aᶜ','A^(c)','Complement'],['|A|','abs(¦A)','Cardinality']]),
+'Geometry':sy('∠∡⊥∥△□○◇°′″≅∼π').concat([['AB̅','overline(¦AB)','Line segment overline'],['AB⃗','vec(¦AB)','Vector AB'],['△ABC','△ABC','Triangle'],['∠ABC','∠ABC','Angle ABC'],['πr²','π r^2','Area of circle'],['2πr','2 π r','Circumference'],['½bh','(1)/(2) b h','Triangle area'],['Pythagoras','a^2 + b^2 = c^2','Pythagorean theorem'],['sines','(sin(A))/(a) = (sin(B))/(b)','Law of sines']]),
+'Accents':[['x̂','hat(¦)','Hat'],['x̄','bar(¦)','Bar'],['overline','overline(¦)','Line above'],['underline','underline(¦)','Line below'],['x̃','tilde(¦)','Tilde'],['ẋ','dot(¦)','Dot above time derivative'],['ẍ','ddot(¦)','Two dots above'],['v⃗','vec(¦)','Vector arrow'],['over','over(¦,)','Text over expression'],['under','under(¦,)','Text under expression']],
+'Chem & physics':[['H₂O','"H"_(2)"O"','Water'],['CO₂','"CO"_(2)','Carbon dioxide'],['reaction','2 "H"_(2) + "O"_(2) arrow(¦,) 2 "H"_(2)"O"','Chemical reaction'],['⇌','⇌','Equilibrium'],['↑','↑','Gas'],['↓','↓','Precipitate'],['Δ','Δ','Delta heat'],['ħ','ħ','h bar'],['ℓ','ℓ','Script l'],['Å','Å','Angstrom'],['units','"m/s"','Units text'],['E=mc²','E = m c^2','Einstein'],['F=ma','F = m a','Newton second law'],['v=u+at','v = u + a t','Equation of motion'],['pH','"pH" = -log_(10)["H"^(+)]','pH formula']],
+'Other':sy('…⋯⋮⋱ℓħℏ‰‱⌀†‡§¶©®™€£¥¢₹'),
+'Formulas':[fx('Quadratic formula','x = (-b ± sqrt(b^2 - 4 a c))/(2 a)'),fx('Pythagoras','a^2 + b^2 = c^2'),fx('Distance','d = sqrt((x_2 - x_1)^2 + (y_2 - y_1)^2)','Distance formula'),fx('Slope','m = (y_2 - y_1)/(x_2 - x_1)'),fx('Derivative definition','f′(x) = lim_(h->0) (f(x+h) - f(x))/h'),fx('Chain rule','(dy)/(dx) = (dy)/(du) (du)/(dx)'),fx('Integration by parts','int u dv = u v - int v du'),fx('Fundamental theorem','int_a^b f(x) dx = F(b) - F(a)','Fundamental theorem of calculus'),fx('Gaussian integral','int_(-∞)^(∞) e^(-x^2) dx = sqrt(π)'),fx('Euler identity','e^(i π) + 1 = 0'),fx('Binomial theorem','(a+b)^n = sum_(k=0)^(n) binom(n,k) a^(n-k) b^k'),fx('Taylor series','f(x) = sum_(n=0)^(∞) (f^((n))(a))/(n!) (x-a)^n'),fx('Sum of n','sum_(i=1)^(n) i = (n(n+1))/2','Sum of first n numbers'),fx('Compound interest','A = P (1 + r/n)^(n t)'),fx('Simple interest','I = (P × R × T)/100'),fx('Circle area','A = π r^2','Area of a circle'),fx('Normal distribution','f(x) = 1/(σ sqrt(2π)) e^(-((x-μ)^2)/(2σ^2))'),fx('Standard deviation','σ = sqrt((sum_(i=1)^(N) (x_i - μ)^2)/N)'),fx('Bayes theorem','P(A|B) = (P(B|A) P(A))/(P(B))'),fx('Determinant 2×2','det(A) = vmat(a,b;c,d) = a d - b c'),fx('Matrix product','pmat(1,2;3,4) pmat(5,6;7,8) = pmat(19,22;43,50)'),fx('Eigenvalues','det(A - λ I) = 0'),fx('Absolute value','abs(x) = cases(x, x >= 0; -x, x < 0)'),fx('Trig identity','sin^2(x) + cos^2(x) = 1'),fx('Law of cosines','c^2 = a^2 + b^2 - 2 a b cos(C)'),fx('Log rule','log_(b)(x y) = log_(b)(x) + log_(b)(y)'),fx('Limit e','lim_(n->∞) (1 + 1/n)^n = e'),fx('Vector magnitude','abs(vec(v)) = sqrt(v_1^2 + v_2^2)'),fx('Newton gravity','F = G (m_1 m_2)/(r^2)'),fx('Water formation','2 "H"_(2) + "O"_(2) arrow(Δ,) 2 "H"_(2)"O"'),fx('For all reals','∀ x ∈ ℝ, x^2 >= 0')]});
+function insNew(sn){const t=sn.replace('¦','');if(L[cur]&&L[cur].k==='m'&&!L[cur].s.trim())L[cur].s=t;else{L.splice(cur+1,0,{k:'m',s:t});cur++}save();build();prev();$('#lines').children[cur].querySelector('input').focus()}
+let curTab='Basics';
+function pal(name){if(name)curTab=name;const q=($('#srch').value||'').trim().toLowerCase();$('#tabs').innerHTML='';
+ for(const k in PAL){const b=document.createElement('button');b.textContent=k;if(k===curTab&&!q)b.className='on';b.onclick=()=>{$('#srch').value='';pal(k)};$('#tabs').append(b)}
+ const p=$('#pal');p.innerHTML='';
+ const items=q?Object.entries(PAL).flatMap(([k,a])=>a.filter(e=>(e[2]+' '+e[0]+' '+k).toLowerCase().includes(q))):PAL[curTab];
+ if(!items.length){p.innerHTML='<span class="hint">Nothing found.</span>';return}
+ items.forEach(([lab,sn,ti,nw])=>{const b=document.createElement('button');b.textContent=lab;b.title=ti;b.onmousedown=e=>e.preventDefault();b.onclick=()=>nw?insNew(sn):ins(sn);p.append(b)})}
+$('#srch').oninput=()=>pal();
+pal('Basics');build();prev();
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script></body></html>
